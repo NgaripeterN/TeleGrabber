@@ -39,12 +39,16 @@ app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
+    # Initialize the bot application
+    await application.initialize()
     # The webhook URL should point to the root of your service, where the webhook handler is.
     await application.bot.set_webhook(url=f"{WEBHOOK_URL}/")
 
 
 @app.on_event("shutdown")
 async def shutdown():
+    # Cleanly shut down the bot application
+    await application.shutdown()
     await application.bot.delete_webhook()
 
 
