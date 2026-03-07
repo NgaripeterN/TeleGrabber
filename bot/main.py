@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi import FastAPI, Request, Depends
 from sqlalchemy.orm import Session
 from telegram import Update
@@ -39,6 +40,16 @@ app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
+    # --- NEW DEBUGGING ---
+    cwd = os.getcwd()
+    print(f"DEBUG: Current working directory: {cwd}")
+    try:
+        dir_contents = os.listdir(cwd)
+        print(f"DEBUG: Contents of '{cwd}': {dir_contents}")
+    except Exception as e:
+        print(f"DEBUG: Error listing directory contents: {e}")
+    # --- END NEW DEBUGGING ---
+
     # Initialize the bot application
     await application.initialize()
     # The webhook URL should point to the root of your service, where the webhook handler is.
