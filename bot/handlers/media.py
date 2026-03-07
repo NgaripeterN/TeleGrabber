@@ -52,7 +52,7 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
 
     group_last_download[group_id] = current_time
     for url in urls:
-        await context.bot.send_message(
+        status_message = await context.bot.send_message(
             chat_id=update.effective_chat.id, text=f"Downloading media from {url}..."
         )
         media_path = await download_media(url)
@@ -68,11 +68,10 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
                     )
                 os.remove(media_path)
                 await update.message.delete()
+                await status_message.delete()
             except Exception as e:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id, text=f"Failed to send media: {e}"
                 )
         else:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, text="Failed to download media."
-            )
+            await status_message.edit_text(text="Failed to download media.")
