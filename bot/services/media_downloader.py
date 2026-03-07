@@ -2,7 +2,9 @@ import yt_dlp
 import asyncio
 import os
 
-COOKIES_FILE = "cookies.txt"
+# Define potential paths for the cookie file
+COOKIE_PATH_LOCAL = "cookies.txt"
+COOKIE_PATH_RENDER = "/etc/secrets/cookies.txt"
 
 async def download_media(url: str):
     loop = asyncio.get_event_loop()
@@ -15,12 +17,16 @@ async def download_media(url: str):
     }
 
     # --- DEBUGGING ---
-    print(f"DEBUG: Checking for cookies file at path: {os.path.abspath(COOKIES_FILE)}")
-    if os.path.exists(COOKIES_FILE):
-        print("DEBUG: cookies.txt FOUND. Adding to yt-dlp options.")
-        ydl_opts['cookiefile'] = COOKIES_FILE
+    print(f"DEBUG: Checking for cookies file...")
+    if os.path.exists(COOKIE_PATH_LOCAL):
+        print(f"DEBUG: cookies.txt FOUND at local path: {COOKIE_PATH_LOCAL}")
+        ydl_opts['cookiefile'] = COOKIE_PATH_LOCAL
+    elif os.path.exists(COOKIE_PATH_RENDER):
+        print(f"DEBUG: cookies.txt FOUND at Render secret path: {COOKIE_PATH_RENDER}")
+        ydl_opts['cookiefile'] = COOKIE_PATH_RENDER
     else:
-        print("DEBUG: cookies.txt NOT FOUND. Proceeding without authenticated session.")
+        print("DEBUG: cookies.txt NOT FOUND in any known path.")
+    
     print(f"DEBUG: Final yt-dlp options: {ydl_opts}")
     # --- END DEBUGGING ---
 
