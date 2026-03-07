@@ -62,7 +62,7 @@ async def webhook(request: Request):
     await application.process_update(update)
     return {"status": "ok"}
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     return {"status": "ok"}
 
