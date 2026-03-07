@@ -12,4 +12,4 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 INVOICE_TITLE = "Bot Subscription"
 INVOICE_DESCRIPTION = "Monthly subscription for the bot"
 CURRENCY = "XTR"
-PRICE = 100 * 100  # 100 stars
+PRICE = 100  # 100 stars

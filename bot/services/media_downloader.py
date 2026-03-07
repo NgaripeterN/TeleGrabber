@@ -11,6 +11,7 @@ async def download_media(url: str):
         'outtmpl': 'downloads/%(id)s.%(ext)s',
         'noplaylist': True,
         'max_filesize': 50 * 1024 * 1024,  # 50MB
+        'age_limit': 21,
     }
 
     if os.path.exists(COOKIES_FILE):

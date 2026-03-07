@@ -16,6 +16,10 @@ To subscribe, use the /subscribe command."""
 
 
 async def subscribe_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Session):
+    if update.effective_chat.type == 'private':
+        await update.message.reply_text("The /subscribe command only works in a group chat that I've been added to.")
+        return
+
     chat_id = update.effective_chat.id
     user_id = update.effective_user.id
 
