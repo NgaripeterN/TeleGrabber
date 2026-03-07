@@ -11,7 +11,7 @@ COOKIE_PATH_RENDER = "/etc/secrets/cookies.txt"
 async def download_media(url: str):
     loop = asyncio.get_event_loop()
     ydl_opts = {
-        'format': 'best',
+        'format': 'bestvideo+bestaudio/best',
         'outtmpl': 'downloads/%(id)s.%(ext)s',
         'noplaylist': True,
         'max_filesize': 50 * 1024 * 1024,  # 50MB
