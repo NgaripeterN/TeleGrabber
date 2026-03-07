@@ -1,6 +1,8 @@
 import yt_dlp
 import asyncio
 import os
+import shutil
+import tempfile
 
 # Define potential paths for the cookie file
 COOKIE_PATH_LOCAL = "cookies.txt"
@@ -16,24 +18,37 @@ async def download_media(url: str):
         'age_limit': 21,
     }
 
-    # --- DEBUGGING ---
-    print(f"DEBUG: Checking for cookies file...")
+    cookie_path_to_use = None
+    temp_cookie_path = None
+
     if os.path.exists(COOKIE_PATH_LOCAL):
-        print(f"DEBUG: cookies.txt FOUND at local path: {COOKIE_PATH_LOCAL}")
-        ydl_opts['cookiefile'] = COOKIE_PATH_LOCAL
+        print(f"DEBUG: Using cookies from local path: {COOKIE_PATH_LOCAL}")
+        cookie_path_to_use = COOKIE_PATH_LOCAL
     elif os.path.exists(COOKIE_PATH_RENDER):
-        print(f"DEBUG: cookies.txt FOUND at Render secret path: {COOKIE_PATH_RENDER}")
-        ydl_opts['cookiefile'] = COOKIE_PATH_RENDER
+        print(f"DEBUG: Found read-only cookies at Render path: {COOKIE_PATH_RENDER}")
+        # Copy to a temporary, writable location
+        temp_dir = tempfile.gettempdir()
+        temp_cookie_path = os.path.join(temp_dir, 'cookies.txt')
+        shutil.copy2(COOKIE_PATH_RENDER, temp_cookie_path)
+        print(f"DEBUG: Copied cookies to writable temp path: {temp_cookie_path}")
+        cookie_path_to_use = temp_cookie_path
     else:
-        print("DEBUG: cookies.txt NOT FOUND in any known path.")
+        print("DEBUG: No cookies file found. Proceeding without authentication.")
+
+    if cookie_path_to_use:
+        ydl_opts['cookiefile'] = cookie_path_to_use
     
     print(f"DEBUG: Final yt-dlp options: {ydl_opts}")
-    # --- END DEBUGGING ---
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=True))
             return ydl.prepare_filename(info)
-        except Exception as e:
-            print(f"Error downloading media: {e}")
-            return None
+    except Exception as e:
+        print(f"Error downloading media: {e}")
+        return None
+    finally:
+        # Clean up the temporary cookie file if it was created
+        if temp_cookie_path and os.path.exists(temp_cookie_path):
+            os.remove(temp_cookie_path)
+            print(f"DEBUG: Cleaned up temporary cookie file: {temp_cookie_path}")
