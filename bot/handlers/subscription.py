@@ -8,11 +8,10 @@ import datetime
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Hello! I am a bot that can help you with group management and media downloading. "
-        "Add me to your group and make me an admin to get started.
+        """Hello! I am a bot that can help you with group management and media downloading.
+Add me to your group and make me an admin to get started.
 
-"
-        "To subscribe, use the /subscribe command."
+To subscribe, use the /subscribe command."""
     )
 
 
