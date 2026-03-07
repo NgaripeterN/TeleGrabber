@@ -14,8 +14,15 @@ async def download_media(url: str):
         'age_limit': 21,
     }
 
+    # --- DEBUGGING ---
+    print(f"DEBUG: Checking for cookies file at path: {os.path.abspath(COOKIES_FILE)}")
     if os.path.exists(COOKIES_FILE):
+        print("DEBUG: cookies.txt FOUND. Adding to yt-dlp options.")
         ydl_opts['cookiefile'] = COOKIES_FILE
+    else:
+        print("DEBUG: cookies.txt NOT FOUND. Proceeding without authenticated session.")
+    print(f"DEBUG: Final yt-dlp options: {ydl_opts}")
+    # --- END DEBUGGING ---
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
