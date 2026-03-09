@@ -55,18 +55,21 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
         status_message = await context.bot.send_message(
             chat_id=update.effective_chat.id, text=f"Downloading media from {url}..."
         )
-        media_path = await download_media(url)
-        if media_path:
+        media_paths = await download_media(url)
+        if media_paths:
             try:
-                if media_path.endswith(('.mp4', '.mov', '.mkv')):
-                    await context.bot.send_video(
-                        chat_id=update.effective_chat.id, video=open(media_path, 'rb'), supports_streaming=True
-                    )
-                else:
-                    await context.bot.send_photo(
-                        chat_id=update.effective_chat.id, photo=open(media_path, 'rb')
-                    )
-                os.remove(media_path)
+                for media_path in media_paths:
+                    if media_path.endswith(('.mp4', '.mov', '.mkv')):
+                        await context.bot.send_video(
+                            chat_id=update.effective_chat.id, video=open(media_path, 'rb'), supports_streaming=True
+                        )
+                    else:
+                        await context.bot.send_photo(
+                            chat_id=update.effective_chat.id, photo=open(media_path, 'rb')
+                        )
+                    os.remove(media_path)
+                
+                # All media sent, now delete the original messages
                 await update.message.delete()
                 await status_message.delete()
             except Exception as e:
