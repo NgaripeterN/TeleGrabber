@@ -35,6 +35,11 @@ async def download_media(url: str):
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=True))
+
+            # If yt-dlp returns None due to ignoreerrors, handle it.
+            if not info:
+                print("DEBUG: yt-dlp returned no information for the URL.")
+                return []
             
             filenames = []
             if 'entries' in info:
