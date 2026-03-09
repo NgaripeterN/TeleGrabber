@@ -14,6 +14,7 @@ async def download_media(url: str):
         'outtmpl': 'downloads/%(id)s.%(ext)s',
         'max_filesize': 50 * 1024 * 1024,  # 50MB
         'age_limit': 21,
+        'ignoreerrors': True,
     }
 
     cookie_path_to_use = None
