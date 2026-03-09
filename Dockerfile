@@ -13,6 +13,9 @@ COPY requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Upgrade yt-dlp to the latest version to get recent patches
+RUN pip install --upgrade yt-dlp
+
 # Copy the rest of the application's code into the container
 COPY ./bot ./bot
 
