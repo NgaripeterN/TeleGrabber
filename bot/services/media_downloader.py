@@ -3,7 +3,6 @@ import asyncio
 import os
 import shutil
 import tempfile
-import httpx
 
 # Define potential paths for the cookie file
 COOKIE_PATH_LOCAL = "cookies.txt"
@@ -12,17 +11,20 @@ COOKIE_PATH_RENDER = "/etc/secrets/cookies.txt"
 async def download_media(url: str):
     loop = asyncio.get_event_loop()
     ydl_opts = {
-        'quiet': True,
+        'format': 'bestvideo+bestaudio/best',
+        'outtmpl': 'downloads/%(id)s.%(ext)s',
+        'max_filesize': 50 * 1024 * 1024,  # 50MB
+        'age_limit': 21,
         'ignoreerrors': True,
     }
 
     cookie_path_to_use = None
     temp_cookie_path = None
-    downloaded_files = []
 
     if os.path.exists(COOKIE_PATH_LOCAL):
         cookie_path_to_use = COOKIE_PATH_LOCAL
     elif os.path.exists(COOKIE_PATH_RENDER):
+        # Copy to a temporary, writable location
         temp_dir = tempfile.gettempdir()
         temp_cookie_path = os.path.join(temp_dir, 'cookies.txt')
         shutil.copy2(COOKIE_PATH_RENDER, temp_cookie_path)
@@ -32,55 +34,40 @@ async def download_media(url: str):
         ydl_opts['cookiefile'] = cookie_path_to_use
 
     try:
-        # Step 1: Use yt-dlp to extract metadata only
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+            info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=True))
 
-        if not info:
-            print("Error: yt-dlp failed to extract metadata.")
-            return []
+            if not info:
+                return []
+            
+            filenames = []
+            if 'entries' in info:
+                for entry in info.get('entries', []):
+                    if isinstance(entry, dict) and entry.get('filepath'):
+                        filenames.append(entry['filepath'])
+                    # Sometimes entries are not dicts, but have been processed
+                    elif entry and not isinstance(entry, dict):
+                         # This case is tricky, we assume ydl has a way to get the filename
+                         # For now, we'll try to get it from the info dict if possible.
+                         # This path is less certain.
+                         prepared_fn = ydl.prepare_filename(info)
+                         if prepared_fn and prepared_fn not in filenames:
+                             filenames.append(prepared_fn)
+            else:
+                if info.get('filepath'):
+                    filenames.append(info['filepath'])
 
-        # Step 2: Find all media URLs from the metadata
-        media_urls = []
-        if 'entries' in info: # Multiple media items
-            for entry in info.get('entries', []):
-                if isinstance(entry, dict) and entry.get('url'):
-                    media_urls.append(entry['url'])
-        elif 'url' in info: # Single media item
-            media_urls.append(info['url'])
-        
-        if not media_urls:
-            print("Error: Could not find any media URLs in the extracted metadata.")
-            return []
+            # Fallback if the above logic fails to find a path
+            if not filenames and info.get('requested_downloads'):
+                 for rd in info.get('requested_downloads', []):
+                     if rd.get('filepath') and rd['filepath'] not in filenames:
+                         filenames.append(rd['filepath'])
 
-        # Step 3: Download the URLs directly using httpx
-        async with httpx.AsyncClient() as client:
-            for i, media_url in enumerate(media_urls):
-                try:
-                    # Create a temporary file to save the download
-                    # We give it a suffix based on the original URL to help with file type
-                    file_suffix = os.path.splitext(media_url.split('?')[0])[-1] or '.tmp'
-                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_suffix)
-                    
-                    async with client.stream('GET', media_url, timeout=30.0) as response:
-                        response.raise_for_status()
-                        with open(temp_file.name, 'wb') as f:
-                            async for chunk in response.aiter_bytes():
-                                f.write(chunk)
-                    
-                    downloaded_files.append(temp_file.name)
-                    print(f"Successfully downloaded {media_url} to {temp_file.name}")
-
-                except Exception as e:
-                    print(f"Failed to download individual URL {media_url}: {e}")
-        
-        return downloaded_files
+            return filenames
 
     except Exception as e:
-        print(f"A top-level error occurred in download_media: {e}")
+        print(f"Error downloading media: {e}")
         return []
     finally:
-        # Clean up the temporary cookie file if it was created
         if temp_cookie_path and os.path.exists(temp_cookie_path):
             os.remove(temp_cookie_path)
-        # Note: The caller is responsible for cleaning up the downloaded media files
