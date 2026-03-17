@@ -93,15 +93,25 @@ async def set_caption_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text("Only admins can set the caption.")
         return
 
-    # Check subscription first
+    # Check subscription first, but allow owner to bypass
+    if user_id != OWNER_ID:
+        subscription = db.query(GroupSubscription).filter_by(group_id=chat_id).first()
+        if not subscription or not subscription.is_active():
+            await update.message.reply_text("You need an active subscription to set a custom caption.")
+            return
+
+    # Retrieve or create subscription object to set the caption
     subscription = db.query(GroupSubscription).filter_by(group_id=chat_id).first()
-    if not subscription or not subscription.is_active():
-        await update.message.reply_text("You need an active subscription to set a custom caption.")
-        return
+    if not subscription:
+        subscription = GroupSubscription(group_id=chat_id)
+        db.add(subscription)
 
     caption = " ".join(context.args)
     if not caption:
-        await update.message.reply_text("Usage: /setcaption <your custom text here>")
+        # If no caption is provided, clear the existing one
+        subscription.custom_caption = None
+        db.commit()
+        await update.message.reply_text("Custom caption cleared.")
         return
 
     subscription.custom_caption = caption
