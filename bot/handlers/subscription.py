@@ -106,15 +106,18 @@ async def set_caption_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         subscription = GroupSubscription(group_id=chat_id)
         db.add(subscription)
 
-    caption = " ".join(context.args)
-    if not caption:
+    caption_text = " ".join(context.args)
+    if not caption_text:
         # If no caption is provided, clear the existing one
         subscription.custom_caption = None
         db.commit()
-        await update.message.reply_text("Custom caption cleared.")
+        await update.message.reply_text("Custom caption cleared. Use `/setcaption your text` to set a new one.")
         return
 
-    subscription.custom_caption = caption
+    # Replace literal '\\n' with actual newline characters
+    final_caption = caption_text.replace('\\n', '\n')
+
+    subscription.custom_caption = final_caption
     db.commit()
 
     await update.message.reply_text(f"Custom caption updated successfully!")
