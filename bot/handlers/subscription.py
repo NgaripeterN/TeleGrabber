@@ -72,11 +72,42 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db:
         return
         
     if subscription and subscription.is_active():
-        await update.message.reply_text(
-            f"Subscription is active. Expires on: {subscription.expiry_date.strftime('%Y-%m-%d')}"
-        )
+        status_text = f"Subscription is active. Expires on: {subscription.expiry_date.strftime('%Y-%m-%d')}"
+        if subscription.custom_caption:
+            status_text += f"\n\nCurrent caption: {subscription.custom_caption}"
+        await update.message.reply_text(status_text)
     else:
         await update.message.reply_text("No active subscription found.")
+
+
+async def set_caption_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Session):
+    if update.effective_chat.type == 'private':
+        await update.message.reply_text("This command only works in a group chat.")
+        return
+
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+
+    admins = await context.bot.get_chat_administrators(chat_id)
+    if user_id not in [admin.user.id for admin in admins] and user_id != OWNER_ID:
+        await update.message.reply_text("Only admins can set the caption.")
+        return
+
+    # Check subscription first
+    subscription = db.query(GroupSubscription).filter_by(group_id=chat_id).first()
+    if not subscription or not subscription.is_active():
+        await update.message.reply_text("You need an active subscription to set a custom caption.")
+        return
+
+    caption = " ".join(context.args)
+    if not caption:
+        await update.message.reply_text("Usage: /setcaption <your custom text here>")
+        return
+
+    subscription.custom_caption = caption
+    db.commit()
+
+    await update.message.reply_text(f"Custom caption updated successfully!")
 
 
 async def grant_subscription_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Session):

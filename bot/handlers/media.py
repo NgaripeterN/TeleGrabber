@@ -50,6 +50,9 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     if not urls:
         return
 
+    # Get custom caption
+    caption = subscription.custom_caption if subscription else None
+
     group_last_download[group_id] = current_time
     for url in urls:
         status_message = await context.bot.send_message(
@@ -58,14 +61,22 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
         media_paths = await download_media(url)
         if media_paths:
             try:
-                for media_path in media_paths:
+                for i, media_path in enumerate(media_paths):
+                    # Add caption only to the first media item
+                    current_caption = caption if i == 0 else None
+                    
                     if media_path.endswith(('.mp4', '.mov', '.mkv')):
                         await context.bot.send_video(
-                            chat_id=update.effective_chat.id, video=open(media_path, 'rb'), supports_streaming=True
+                            chat_id=update.effective_chat.id, 
+                            video=open(media_path, 'rb'), 
+                            supports_streaming=True,
+                            caption=current_caption
                         )
                     else:
                         await context.bot.send_photo(
-                            chat_id=update.effective_chat.id, photo=open(media_path, 'rb')
+                            chat_id=update.effective_chat.id, 
+                            photo=open(media_path, 'rb'),
+                            caption=current_caption
                         )
                     os.remove(media_path)
                 

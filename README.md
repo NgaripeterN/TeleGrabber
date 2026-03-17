@@ -13,7 +13,7 @@ A subscription-based Telegram bot built with FastAPI that helps manage groups.
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repo-url>
+    git clone <https://github.com/NgaripeterN/TeleGrabber>
     cd <your-repo-name>
     ```
 

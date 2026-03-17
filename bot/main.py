@@ -2,7 +2,7 @@ import asyncio
 import os
 from fastapi import FastAPI, Request, Depends
 from sqlalchemy.orm import Session
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -26,6 +26,7 @@ from bot.handlers.subscription import (
     precheckout_callback,
     successful_payment_callback,
     status_command,
+    set_caption_command,
     grant_subscription_command,
 )
 
@@ -44,6 +45,15 @@ async def startup():
     await application.initialize()
     # The webhook URL should point to the root of your service, where the webhook handler is.
     await application.bot.set_webhook(url=f"{WEBHOOK_URL}/")
+    
+    # Set bot commands for the / menu
+    commands = [
+        BotCommand("start", "Welcome message"),
+        BotCommand("subscribe", "Subscribe the group to the bot"),
+        BotCommand("status", "Check subscription status"),
+        BotCommand("setcaption", "Set a custom caption for downloaded media"),
+    ]
+    await application.bot.set_my_commands(commands)
 
 
 @app.on_event("shutdown")
@@ -76,6 +86,7 @@ async def health_check():
 application.add_handler(CommandHandler("start", start_command))
 application.add_handler(CommandHandler("status", lambda u, c: db_decorator(status_command, u, c)))
 application.add_handler(CommandHandler("subscribe", lambda u, c: db_decorator(subscribe_command, u, c)))
+application.add_handler(CommandHandler("setcaption", lambda u, c: db_decorator(set_caption_command, u, c)))
 application.add_handler(CommandHandler("grant", lambda u, c: db_decorator(grant_subscription_command, u, c)))
 
 # Message Handlers

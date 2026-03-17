@@ -11,6 +11,7 @@ class GroupSubscription(Base):
     subscribed = Column(Boolean, default=False)
     expiry_date = Column(DateTime, nullable=True)
     subscriber_id = Column(Integer, nullable=True)
+    custom_caption = Column(String, nullable=True)
 
     def is_active(self):
         if not self.subscribed:
