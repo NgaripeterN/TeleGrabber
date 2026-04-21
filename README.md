@@ -6,7 +6,9 @@ A subscription-based Telegram bot built with FastAPI that helps manage groups.
 
 - Deletes "user joined/left" messages.
 - Basic anti-spam protection against message flooding.
-- When an admin posts a link from Twitter/X or Reddit, the bot downloads the media (including audio), posts it directly to the group, and deletes the original message.
+- Downloads media (including audio) from Twitter/X and Reddit links in both group chats and private chats.
+- In groups, admins can post a Twitter/X or Reddit link and the bot will repost the media directly, then delete the original link message.
+- When users send image/video media to the bot, it removes metadata and sends back a cleaned copy.
 - Built-in subscription system using Telegram Stars.
 
 ## Setup and Installation

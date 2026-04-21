@@ -10,7 +10,7 @@ import os
 
 URL_REGEX = r'(https?://(?:www\.)?(?:twitter\.com|x\.com|reddit\.com)/[^\s]+)'
 DOWNLOAD_COOLDOWN = 30  # seconds
-group_last_download = {}
+chat_last_download = {}
 
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     if update.effective_chat.type == 'private':
@@ -23,24 +23,25 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     if not update.message or not update.message.text:
         return
 
-    group_id = update.effective_chat.id
+    chat_id = update.effective_chat.id
     user_id = update.effective_user.id
+    is_private_chat = update.effective_chat.type == 'private'
 
     if not await is_admin(update, context):
         return
 
-    # Check subscription
-    subscription = db.query(GroupSubscription).filter_by(group_id=group_id).first()
+    subscription = None
+    if not is_private_chat:
+        # Subscription is required only for groups.
+        subscription = db.query(GroupSubscription).filter_by(group_id=chat_id).first()
 
-    # Owner is always subscribed
-    if user_id == OWNER_ID:
-        pass
-    elif not subscription or not subscription.is_active():
-        return
+        # Owner is always subscribed
+        if user_id != OWNER_ID and (not subscription or not subscription.is_active()):
+            return
         
     # Rate limit check
     current_time = time.time()
-    last_download_time = group_last_download.get(group_id, 0)
+    last_download_time = chat_last_download.get(chat_id, 0)
 
     if current_time - last_download_time < DOWNLOAD_COOLDOWN:
         await update.message.reply_text(f"Please wait {int(DOWNLOAD_COOLDOWN - (current_time - last_download_time))} more seconds before downloading another file.")
@@ -53,7 +54,7 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     # Get custom caption
     caption = subscription.custom_caption if subscription else None
 
-    group_last_download[group_id] = current_time
+    chat_last_download[chat_id] = current_time
     for url in urls:
         status_message = await context.bot.send_message(
             chat_id=update.effective_chat.id, text=f"Downloading media from {url}..."
@@ -80,8 +81,9 @@ async def media_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
                         )
                     os.remove(media_path)
                 
-                # All media sent, now delete the original messages
-                await update.message.delete()
+                # In groups we replace the original link message; private chats keep it.
+                if not is_private_chat:
+                    await update.message.delete()
                 await status_message.delete()
             except Exception as e:
                 await context.bot.send_message(

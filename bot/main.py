@@ -16,6 +16,7 @@ from bot.core.config import TELEGRAM_BOT_TOKEN, WEBHOOK_URL
 from bot.database.database import engine, Base, get_db
 from bot.database.models import GroupSubscription
 from bot.handlers.media import media_handler
+from bot.handlers.media_sanitize import media_sanitizer_handler
 from bot.handlers.moderation import (
     delete_join_leave_messages,
     anti_spam_handler,
@@ -97,6 +98,12 @@ application.add_handler(
     )
 )
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda u, c: db_decorator(media_handler, u, c)))
+application.add_handler(
+    MessageHandler(
+        (filters.PHOTO | filters.VIDEO | filters.Document.IMAGE | filters.Document.VIDEO) & ~filters.COMMAND,
+        media_sanitizer_handler,
+    )
+)
 application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, anti_spam_handler))
 
 # Payment Handlers
